@@ -1,4 +1,5 @@
 import StableMulticast.*;
+import java.util.Scanner;
 
 public class Client implements IStableMulticast {
 
@@ -8,12 +9,23 @@ public class Client implements IStableMulticast {
         this.stableMulticast = new StableMulticast(ip, port, this);
     }
 
-    private void menu() {
-        //
+    public void deliver(String msg) {
+        System.out.println("Received: " + msg);
     }
 
-    public void deliver(String msg) {
-        //
+    private void menu() {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.println("Message to be sent: ");
+            String msg = scanner.nextLine();
+            if (msg.equalsIgnoreCase("exit")) {
+                stableMulticast.leaveGroup();
+                break;
+            } else {
+                this.stableMulticast.msend(msg);
+            }
+        }
+        scanner.close();
     }
 
     public static void main(String[] args) {
