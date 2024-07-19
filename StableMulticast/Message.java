@@ -1,4 +1,4 @@
-package StableMulticast;
+package  StableMulticast;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -8,16 +8,18 @@ public class Message implements Serializable {
     
     private String message;
     private int[][] matrix;
+    private int matrixSize;
 
     public Message(String message, int[][] matrix) {
         this.message = message;
-        if (matrix.length == 4 && matrix[0].length == 4) {
-            this.matrix = new int[4][4];
-            for (int i = 0; i < 4; i++) {
-                this.matrix[i] = Arrays.copyOf(matrix[i], 4);
+        this.matrixSize = matrix.length;
+        if (matrix.length > 0 && matrix.length == matrix[0].length) {
+            this.matrix = new int[matrixSize][matrixSize];
+            for (int i = 0; i < matrixSize; i++) {
+                this.matrix[i] = Arrays.copyOf(matrix[i], matrixSize);
             }
         } else {
-            throw new IllegalArgumentException("Matrix must be 4x4");
+            throw new IllegalArgumentException("Matrix must be square (NxN)");
         }
     }
 
@@ -29,17 +31,21 @@ public class Message implements Serializable {
         return matrix;
     }
 
+    public int getMatrixSize() {
+        return matrixSize;
+    }
+
     public void setMessage(String message) {
         this.message = message;
     }
 
     public void setMatrix(int[][] matrix) {
-        if (matrix.length == 4 && matrix[0].length == 4) {
-            for (int i = 0; i < 4; i++) {
-                this.matrix[i] = Arrays.copyOf(matrix[i], 4);
+        if (matrix.length == this.matrixSize && matrix.length == matrix[0].length) {
+            for (int i = 0; i < matrixSize; i++) {
+                this.matrix[i] = Arrays.copyOf(matrix[i], matrixSize);
             }
         } else {
-            throw new IllegalArgumentException("Matrix must be 4x4");
+            throw new IllegalArgumentException("Matrix must be square (NxN) and match the initialized size");
         }
     }
 
@@ -48,6 +54,7 @@ public class Message implements Serializable {
         return "Message{" +
                 "message='" + message + '\'' +
                 ", matrix=" + Arrays.deepToString(matrix) +
+                ", matrixSize=" + matrixSize +
                 '}';
     }
 }

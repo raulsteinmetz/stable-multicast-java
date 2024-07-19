@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class StableMulticast {
+    public static final int N_CLIENTS = 4;
     private IStableMulticast client;
     private String ip;
     private String multicastIp;
