@@ -104,7 +104,7 @@ public class StableMulticast {
     }
 
     private void handleMulticast(String msg, InetAddress address, int port) {
-        if (msg.startsWith("join:")) { // someone joined
+        if (msg.startsWith("join")) { // someone joined
             String[] parts = msg.split(":");
             String memberIp = parts[1];
             int memberPort = Integer.parseInt(parts[2]);
@@ -178,9 +178,10 @@ public class StableMulticast {
     }
 
     public void msend(String msg) {
-        System.out.println("...sending messages..."); // debugging
+        System.out.println("Send Message Separately? (y/n)"); // debugging
         Scanner sc = new Scanner(System.in); // debugging
-        
+        String resp = sc.nextLine();
+
         // construct the vector timestamp for the message
         int[] vectorTimestamp = new int[N_CLIENTS];
         synchronized (lamport) {
@@ -198,8 +199,10 @@ public class StableMulticast {
 
         // send the message to all known members via unicast
         for (InetSocketAddress member : members) {
-            System.out.print("press Enter to send each message!"); // debugging
-            sc.nextLine(); // debugging
+            if (resp.startsWith("y")) {
+                System.out.print("press Enter to send each message!"); // debugging
+                sc.nextLine(); // debugging
+            }
             sendUnicast(message, member);
         }
     }
