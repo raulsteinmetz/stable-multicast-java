@@ -1,6 +1,6 @@
 package StableMulticast;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,6 +15,7 @@ public class StableMulticast {
     private DatagramSocket unicastSocket;
     private InetAddress group;
     private Set<InetSocketAddress> members;
+    private int[][] lamport;
 
     public StableMulticast(String ip, Integer port, IStableMulticast client) {
         this.unicastPort = port;
@@ -23,19 +24,21 @@ public class StableMulticast {
         this.multicastIp = "230.0.0.0";
         this.client = client;
         this.members = new HashSet<>();
-        
+
+        this.lamport = new int[4][4]; // defaulted for 4 members in the group
+
         try {
             this.multicastSocket = new MulticastSocket(multicastPort);
             this.group = InetAddress.getByName(multicastIp);
             this.multicastSocket.joinGroup(group);
-            
+
             this.unicastSocket = new DatagramSocket(unicastPort);
-            
+
             new Thread(this::receiveMulticastMessages).start(); // receives multicast messages
             new Thread(this::receiveUnicastMessages).start(); // receives unicast messages
-            
+
             sendMulticast("join:" + this.ip + ":" + this.unicastPort); // notify entrance and id
-            
+
         } catch (IOException e) {
             //
         }
@@ -44,7 +47,7 @@ public class StableMulticast {
     private void receiveMulticastMessages() {
         byte[] buffer = new byte[1000];
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-        
+
         while (true) {
             try {
                 multicastSocket.receive(packet);
@@ -63,9 +66,13 @@ public class StableMulticast {
         while (true) {
             try {
                 unicastSocket.receive(packet);
-                String msg = new String(packet.getData(), 0, packet.getLength());
-                client.deliver(msg);
-            } catch (IOException e) {
+                ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+                ObjectInputStream is = new ObjectInputStream(new BufferedInputStream(byteStream));
+                Message message = (Message) is.readObject();
+                is.close();
+
+                client.deliver(message.getMessage()); 
+            } catch (IOException | ClassNotFoundException e) {
                 //
             }
         }
@@ -110,7 +117,7 @@ public class StableMulticast {
     private void sendMulticast(String msg) {
         byte[] buffer = msg.getBytes();
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, multicastPort);
-        
+
         try {
             multicastSocket.send(packet);
         } catch (IOException e) {
@@ -118,21 +125,28 @@ public class StableMulticast {
         }
     }
 
-    private void sendUnicast(String msg, InetSocketAddress member) {
-        byte[] buffer = msg.getBytes();
-        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, member.getAddress(), member.getPort());
-
+    private void sendUnicast(Message message, InetSocketAddress member) {
         try {
+            ByteArrayOutputStream byteStream = new ByteArrayOutputStream(5000);
+            ObjectOutputStream os = new ObjectOutputStream(new BufferedOutputStream(byteStream));
+            os.flush();
+            os.writeObject(message);
+            os.flush();
+            byte[] sendBuf = byteStream.toByteArray();
+            DatagramPacket packet = new DatagramPacket(sendBuf, sendBuf.length, member.getAddress(), member.getPort());
+
             unicastSocket.send(packet);
+            os.close();
         } catch (IOException e) {
             //
         }
     }
 
     public void msend(String msg) {
+        Message message = new Message(msg, lamport);
         // send the message to all known members via unicast
         for (InetSocketAddress member : members) {
-            sendUnicast(msg, member);
+            sendUnicast(message, member);
         }
     }
 

@@ -41,7 +41,7 @@ public class Client implements IStableMulticast {
                         System.out.println(message);
                     }
                     System.out.print("Press enter to go back to menu: ");
-                    msg = scanner.nextLine();
+                    scanner.nextLine();
                     break;
                 case "3":
                     stableMulticast.leaveGroup();
