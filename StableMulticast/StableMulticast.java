@@ -26,7 +26,7 @@ public class StableMulticast {
         this.client = client;
         this.members = new HashSet<>();
 
-        this.lamport = new int[4][4]; // defaulted for 4 members in the group
+        this.lamport = new int[N_CLIENTS][N_CLIENTS]; // N_CLIENTS members in the group
 
         try {
             this.multicastSocket = new MulticastSocket(multicastPort);
