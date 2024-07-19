@@ -84,7 +84,7 @@ public class StableMulticast {
                 Message message = (Message) is.readObject();
                 is.close();
 
-                // update the local info with the info piggybacked in the message
+                // update the local matrix
                 updateLamportMatrix(message.getLamportMatrix(), message.getSenderId());
 
                 synchronized (messageBuffer) {
@@ -92,6 +92,9 @@ public class StableMulticast {
                 }
 
                 client.deliver(message.getMessage());
+
+                // check for stable messages and discard them
+                discardStableMessages();
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -173,7 +176,7 @@ public class StableMulticast {
     }
 
     public void msend(String msg) {
-        // Increment the Lamport clock for this client
+        // increment clock for this client
         lamport[clientId][clientId]++;
 
         Message message = new Message(msg, lamport, this.clientId);
@@ -219,6 +222,29 @@ public class StableMulticast {
         }
     }
 
+    private void discardStableMessages() {
+        synchronized (messageBuffer) {
+            Iterator<Message> iterator = messageBuffer.iterator();
+            while (iterator.hasNext()) {
+                Message message = iterator.next();
+                int senderId = message.getSenderId();
+                int messageSeqNum = message.getLamportMatrix()[senderId][senderId];
+                boolean isStable = true;
+
+                for (int i = 0; i < N_CLIENTS; i++) {
+                    if (lamport[i][senderId] < messageSeqNum) {
+                        isStable = false;
+                        break;
+                    }
+                }
+
+                if (isStable) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
     public int[][] getCurrentLamportMatrix() {
         synchronized (lamport) {
             int[][] copy = new int[N_CLIENTS][N_CLIENTS];
@@ -226,6 +252,6 @@ public class StableMulticast {
                 System.arraycopy(lamport[i], 0, copy[i], 0, N_CLIENTS);
             }
             return copy;
+        }
     }
-}
 }
