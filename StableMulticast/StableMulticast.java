@@ -8,25 +8,25 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class StableMulticast {
-    public static final int N_CLIENTS = 4;
-    private IStableMulticast client;
-    private String ip;
-    private String multicastIp;
-    private int multicastPort;
-    private int unicastPort;
-    private MulticastSocket multicastSocket;
-    private DatagramSocket unicastSocket;
-    private InetAddress group;
-    private List<InetSocketAddress> members;
-    private int[][] lamport;
-    private int clientId;
-    private Set<InetSocketAddress> infoMessagesReceived;
-    private List<Message> messageBuffer;
+    public static final int N_CLIENTS = 4; // number of processes in the group is static
+    private IStableMulticast client; // reference for delivering messages
+    private String ip; // ip of current client
+    private String multicastIp; // multicast ip
+    private int multicastPort; // multicast port
+    private int unicastPort; // port of current client
+    private MulticastSocket multicastSocket; // for receiving multicast messages
+    private DatagramSocket unicastSocket; // for receiving udp unicast messages
+    private InetAddress group; // for entering the multicast group
+    private List<InetSocketAddress> members; // adresses of unicast for members of the group
+    private int[][] lamport; // logical clock matrix for stable message detection
+    private int clientId; // client id in the group for stable message detection
+    private Set<InetSocketAddress> infoMessagesReceived; // used for id discovery
+    private List<Message> messageBuffer; // message buffer
 
     public StableMulticast(String ip, Integer port, IStableMulticast client) {
         this.unicastPort = port;
         this.ip = ip;
-        this.multicastPort = 4446; // defaulted for now
+        this.multicastPort = 4446;
         this.multicastIp = "230.0.0.0";
         this.client = client;
         this.clientId = 0;
@@ -46,9 +46,9 @@ public class StableMulticast {
             new Thread(this::receiveMulticastMessages).start(); // receives multicast messages
             new Thread(this::receiveUnicastMessages).start(); // receives unicast messages
 
-            sendMulticast("join:" + this.ip + ":" + this.unicastPort); // notify entrance
+            sendMulticast("join:" + this.ip + ":" + this.unicastPort); // notify entrance in group
 
-            // start a timer to wait for "info" messages (id discovery)
+            // 1 second to wait for "info" messages (id discovery)
             ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
             scheduler.schedule(this::assignClientId, 1, TimeUnit.SECONDS);
 
@@ -180,6 +180,7 @@ public class StableMulticast {
     public void msend(String msg) {
         System.out.println("...sending messages..."); // debugging
         Scanner sc = new Scanner(System.in); // debugging
+        
         // construct the vector timestamp for the message
         int[] vectorTimestamp = new int[N_CLIENTS];
         synchronized (lamport) {

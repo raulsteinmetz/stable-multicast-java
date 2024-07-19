@@ -37,7 +37,7 @@ public class Client implements IStableMulticast {
         try {
             Thread.sleep(2000); // waits for id discovery
         } catch (InterruptedException e) {
-            System.out.println("Interrupted during sleep: " + e.getMessage());
+            //
         }
 
         while (true) {
