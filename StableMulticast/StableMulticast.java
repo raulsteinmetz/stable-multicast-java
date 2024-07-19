@@ -2,7 +2,9 @@ package StableMulticast;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -22,6 +24,7 @@ public class StableMulticast {
     private int[][] lamport;
     private int clientId;
     private Set<InetSocketAddress> infoMessagesReceived;
+    private List<Message> messageBuffer;
 
     public StableMulticast(String ip, Integer port, IStableMulticast client) {
         this.unicastPort = port;
@@ -32,6 +35,7 @@ public class StableMulticast {
         this.clientId = 0;
         this.members = new HashSet<>();
         this.infoMessagesReceived = new HashSet<>();
+        this.messageBuffer = new ArrayList<>();
 
         this.lamport = new int[N_CLIENTS][N_CLIENTS]; // N_CLIENTS members in the group
 
@@ -82,6 +86,10 @@ public class StableMulticast {
                 ObjectInputStream is = new ObjectInputStream(new BufferedInputStream(byteStream));
                 Message message = (Message) is.readObject();
                 is.close();
+
+                synchronized (messageBuffer) {
+                    messageBuffer.add(message);
+                }
 
                 client.deliver(message.getMessage());
             } catch (IOException | ClassNotFoundException e) {
@@ -166,6 +174,9 @@ public class StableMulticast {
 
     public void msend(String msg) {
         Message message = new Message(msg, lamport, this.clientId);
+        synchronized (messageBuffer) {
+            messageBuffer.add(message);
+        }
         // send the message to all known members via unicast
         for (InetSocketAddress member : members) {
             sendUnicast(message, member);
@@ -186,5 +197,11 @@ public class StableMulticast {
 
     public int getClientId() {
         return this.clientId;
+    }
+
+    public List<Message> getMessageBuffer() {
+        synchronized (messageBuffer) {
+            return new ArrayList<>(messageBuffer);
+        }
     }
 }
