@@ -1,60 +1,57 @@
-package  StableMulticast;
+
+package StableMulticast;
 
 import java.io.Serializable;
 import java.util.Arrays;
 
 public class Message implements Serializable {
     private static final long serialVersionUID = 1L;
-    
-    private String message;
-    private int[][] matrix;
-    private int matrixSize;
 
-    public Message(String message, int[][] matrix) {
+    private String message;
+    private final int[][] lamportMatrix;
+    private int senderId;
+
+    public Message(String message, int[][] lamportMatrix, int senderId) {
         this.message = message;
-        this.matrixSize = matrix.length;
-        if (matrix.length > 0 && matrix.length == matrix[0].length) {
-            this.matrix = new int[matrixSize][matrixSize];
-            for (int i = 0; i < matrixSize; i++) {
-                this.matrix[i] = Arrays.copyOf(matrix[i], matrixSize);
-            }
-        } else {
-            throw new IllegalArgumentException("Matrix must be square (NxN)");
+        this.lamportMatrix = new int[lamportMatrix.length][lamportMatrix.length];
+        for (int i = 0; i < lamportMatrix.length; i++) {
+            this.lamportMatrix[i] = Arrays.copyOf(lamportMatrix[i], lamportMatrix.length);
         }
+        this.senderId = senderId;
     }
 
     public String getMessage() {
         return message;
     }
 
-    public int[][] getMatrix() {
-        return matrix;
+    public int[][] getLamportMatrix() {
+        return lamportMatrix;
     }
 
-    public int getMatrixSize() {
-        return matrixSize;
+    public int getSenderId() {
+        return senderId;
     }
 
     public void setMessage(String message) {
         this.message = message;
     }
 
-    public void setMatrix(int[][] matrix) {
-        if (matrix.length == this.matrixSize && matrix.length == matrix[0].length) {
-            for (int i = 0; i < matrixSize; i++) {
-                this.matrix[i] = Arrays.copyOf(matrix[i], matrixSize);
-            }
-        } else {
-            throw new IllegalArgumentException("Matrix must be square (NxN) and match the initialized size");
+    public void setLamportMatrix(int[][] lamportMatrix) {
+        for (int i = 0; i < lamportMatrix.length; i++) {
+            this.lamportMatrix[i] = Arrays.copyOf(lamportMatrix[i], lamportMatrix.length);
         }
+    }
+
+    public void setSenderId(int senderId) {
+        this.senderId = senderId;
     }
 
     @Override
     public String toString() {
         return "Message{" +
                 "message='" + message + '\'' +
-                ", matrix=" + Arrays.deepToString(matrix) +
-                ", matrixSize=" + matrixSize +
+                ", lamportMatrix=" + Arrays.deepToString(lamportMatrix) +
+                ", senderId='" + senderId + '\'' +
                 '}';
     }
 }

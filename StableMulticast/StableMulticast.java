@@ -4,6 +4,9 @@ import java.io.*;
 import java.net.*;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class StableMulticast {
     public static final int N_CLIENTS = 4;
@@ -17,6 +20,8 @@ public class StableMulticast {
     private InetAddress group;
     private Set<InetSocketAddress> members;
     private int[][] lamport;
+    private int clientId;
+    private Set<InetSocketAddress> infoMessagesReceived;
 
     public StableMulticast(String ip, Integer port, IStableMulticast client) {
         this.unicastPort = port;
@@ -24,7 +29,9 @@ public class StableMulticast {
         this.multicastPort = 4446; // defaulted for now
         this.multicastIp = "230.0.0.0";
         this.client = client;
+        this.clientId = 0;
         this.members = new HashSet<>();
+        this.infoMessagesReceived = new HashSet<>();
 
         this.lamport = new int[N_CLIENTS][N_CLIENTS]; // N_CLIENTS members in the group
 
@@ -38,7 +45,11 @@ public class StableMulticast {
             new Thread(this::receiveMulticastMessages).start(); // receives multicast messages
             new Thread(this::receiveUnicastMessages).start(); // receives unicast messages
 
-            sendMulticast("join:" + this.ip + ":" + this.unicastPort); // notify entrance and id
+            sendMulticast("join:" + this.ip + ":" + this.unicastPort); // notify entrance
+
+            // start a timer to wait for "info" messages (id discovery)
+            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+            scheduler.schedule(this::assignClientId, 1, TimeUnit.SECONDS);
 
         } catch (IOException e) {
             //
@@ -72,7 +83,7 @@ public class StableMulticast {
                 Message message = (Message) is.readObject();
                 is.close();
 
-                client.deliver(message.getMessage()); 
+                client.deliver(message.getMessage());
             } catch (IOException | ClassNotFoundException e) {
                 //
             }
@@ -102,6 +113,9 @@ public class StableMulticast {
             InetSocketAddress member = new InetSocketAddress(memberIp, memberPort);
             if (!members.contains(member)) {
                 members.add(member);
+            }
+            synchronized (infoMessagesReceived) {
+                infoMessagesReceived.add(member);
             }
         } else if (msg.startsWith("leave:")) { // someone is leaving
             String[] parts = msg.split(":");
@@ -143,8 +157,15 @@ public class StableMulticast {
         }
     }
 
+    private void assignClientId() {
+        synchronized (infoMessagesReceived) {
+            this.clientId = infoMessagesReceived.size();
+            System.out.println("Assigned client ID: " + this.clientId);
+        }
+    }
+
     public void msend(String msg) {
-        Message message = new Message(msg, lamport);
+        Message message = new Message(msg, lamport, this.clientId);
         // send the message to all known members via unicast
         for (InetSocketAddress member : members) {
             sendUnicast(message, member);
@@ -161,5 +182,9 @@ public class StableMulticast {
         } catch (IOException e) {
             //
         }
+    }
+
+    public int getClientId() {
+        return this.clientId;
     }
 }

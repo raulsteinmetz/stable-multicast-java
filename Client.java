@@ -21,6 +21,7 @@ public class Client implements IStableMulticast {
         while (true) {
             final String clearScreen = "\033[H\033[2J";
             System.out.print(clearScreen);
+            System.out.println("Client id: " + this.stableMulticast.getClientId());
             System.out.println("\nMenu:");
             System.out.println("1. Send message");
             System.out.println("2. Read previous messages");

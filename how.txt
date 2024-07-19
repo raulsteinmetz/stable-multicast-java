@@ -1,0 +1,10 @@
+each process holds known lamport vectors of every other process
+
+buffer with every message sent or received
+
+if a process fails before its message is delivered to all, other process with a copy in the buffer can forward that message
+the process who hasnt received the message has to detect it
+
+when a message is detected to have been received by all the processes, it can be poped from the buffer
+
+messages buffered must contain lamport matrix and id of the sender
