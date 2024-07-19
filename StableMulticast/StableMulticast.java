@@ -84,13 +84,15 @@ public class StableMulticast {
                 Message message = (Message) is.readObject();
                 is.close();
 
-                // update the local matrix
-                updateLamportMatrix(message.getLamportMatrix(), message.getSenderId());
-
+                // deposit the message in the buffer
                 synchronized (messageBuffer) {
                     messageBuffer.add(message);
                 }
 
+                // update the local matrix
+                updateLamportMatrix(message.getLamportVector(), message.getSenderId());
+
+                // deliver the message to the client
                 client.deliver(message.getMessage());
 
                 // check for stable messages and discard them
@@ -176,17 +178,30 @@ public class StableMulticast {
     }
 
     public void msend(String msg) {
-        // increment clock for this client
-        lamport[clientId][clientId]++;
+        System.out.println("...Sending message..."); // debugging
+        Scanner sc = new Scanner(System.in); // debugging
+        // construct the vector timestamp for the message
+        int[] vectorTimestamp = new int[N_CLIENTS];
+        synchronized (lamport) {
+            System.arraycopy(lamport[clientId], 0, vectorTimestamp, 0, N_CLIENTS);
+            lamport[clientId][clientId]++;
+        }
 
-        Message message = new Message(msg, lamport, this.clientId);
+        // create the message with the vector timestamp
+        Message message = new Message(msg, vectorTimestamp, this.clientId);
+
+        // deposit
         synchronized (messageBuffer) {
             messageBuffer.add(message);
         }
+
         // send the message to all known members via unicast
         for (InetSocketAddress member : members) {
+            System.out.print("Press Enter to send each message!"); // debugging
+            sc.nextLine(); // debugging
             sendUnicast(message, member);
         }
+
     }
 
     public void leaveGroup() {
@@ -211,13 +226,9 @@ public class StableMulticast {
         }
     }
 
-    private void updateLamportMatrix(int[][] receivedMatrix, int senderId) {
+    private void updateLamportMatrix(int[] receivedVectorClock, int senderId) {
         synchronized (lamport) {
-            for (int i = 0; i < N_CLIENTS; i++) {
-                for (int j = 0; j < N_CLIENTS; j++) {
-                    lamport[i][j] = Math.max(lamport[i][j], receivedMatrix[i][j]);
-                }
-            }
+            System.arraycopy(receivedVectorClock, 0, lamport[senderId], 0, N_CLIENTS);
             lamport[clientId][senderId]++;
         }
     }
@@ -228,11 +239,11 @@ public class StableMulticast {
             while (iterator.hasNext()) {
                 Message message = iterator.next();
                 int senderId = message.getSenderId();
-                int messageSeqNum = message.getLamportMatrix()[senderId][senderId];
+                int messageSeqNum = message.getLamportVector()[senderId];
                 boolean isStable = true;
 
                 for (int i = 0; i < N_CLIENTS; i++) {
-                    if (lamport[i][senderId] < messageSeqNum) {
+                    if (lamport[i][senderId] <= messageSeqNum) {
                         isStable = false;
                         break;
                     }

@@ -7,15 +7,12 @@ public class Message implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String message;
-    private final int[][] lamportMatrix;
+    private final int[] lamportVector;
     private int senderId;
 
-    public Message(String message, int[][] lamportMatrix, int senderId) {
+    public Message(String message, int[] lamportVector, int senderId) {
         this.message = message;
-        this.lamportMatrix = new int[lamportMatrix.length][lamportMatrix.length];
-        for (int i = 0; i < lamportMatrix.length; i++) {
-            this.lamportMatrix[i] = Arrays.copyOf(lamportMatrix[i], lamportMatrix.length);
-        }
+        this.lamportVector = Arrays.copyOf(lamportVector, lamportVector.length);
         this.senderId = senderId;
     }
 
@@ -23,8 +20,8 @@ public class Message implements Serializable {
         return message;
     }
 
-    public int[][] getLamportMatrix() {
-        return lamportMatrix;
+    public int[] getLamportVector() {
+        return lamportVector;
     }
 
     public int getSenderId() {
@@ -35,24 +32,16 @@ public class Message implements Serializable {
         this.message = message;
     }
 
-    public void setLamportMatrix(int[][] lamportMatrix) {
-        for (int i = 0; i < lamportMatrix.length; i++) {
-            this.lamportMatrix[i] = Arrays.copyOf(lamportMatrix[i], lamportMatrix.length);
-        }
+    public void setLamportVector(int[] lamportVector) {
+        System.arraycopy(lamportVector, 0, this.lamportVector, 0, lamportVector.length);
     }
 
     public void setSenderId(int senderId) {
         this.senderId = senderId;
     }
 
-    private String formatMatrix() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[\n");
-        for (int[] row : lamportMatrix) {
-            sb.append("  ").append(Arrays.toString(row)).append("\n");
-        }
-        sb.append("]");
-        return sb.toString();
+    private String formatVector() {
+        return Arrays.toString(lamportVector);
     }
 
     @Override
@@ -60,7 +49,7 @@ public class Message implements Serializable {
         return "Message{" +
                 "message='" + message + '\'' +
                 ", senderId=" + senderId +
-                ", lamportMatrix=" + formatMatrix() +
+                ", lamportVector=" + formatVector() +
                 '}';
     }
 }

@@ -1,4 +1,5 @@
 import StableMulticast.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,11 +19,29 @@ public class Client implements IStableMulticast {
         messageBuffer.add(msg);
     }
 
+    private void clearScreen() {
+        try {
+            if (System.getProperty("os.name").contains("Windows")) {
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                new ProcessBuilder("clear").inheritIO().start().waitFor();
+            }
+        } catch (IOException | InterruptedException ex) {
+            //
+        }
+    }
+
     private void menu() {
         Scanner scanner = new Scanner(System.in);
+
+        try {
+            Thread.sleep(2000); // waits for id discovery
+        } catch (InterruptedException e) {
+            System.out.println("Interrupted during sleep: " + e.getMessage());
+        }
+
         while (true) {
-            final String clearScreen = "\033[H\033[2J";
-            System.out.print(clearScreen);
+            clearScreen();
             System.out.println("Client id: " + this.stableMulticast.getClientId());
             System.out.println("\nMenu:");
             System.out.println("1. Send message");
