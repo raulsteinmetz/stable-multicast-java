@@ -2,10 +2,7 @@ package StableMulticast;
 
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +53,7 @@ public class StableMulticast {
             scheduler.schedule(this::assignClientId, 1, TimeUnit.SECONDS);
 
         } catch (IOException e) {
-            //
+            e.printStackTrace();
         }
     }
 
@@ -70,7 +67,7 @@ public class StableMulticast {
                 String msg = new String(packet.getData(), 0, packet.getLength());
                 handleMulticast(msg, packet.getAddress(), packet.getPort());
             } catch (IOException e) {
-                //
+                e.printStackTrace();
             }
         }
     }
@@ -87,13 +84,16 @@ public class StableMulticast {
                 Message message = (Message) is.readObject();
                 is.close();
 
+                // update the local info with the info piggybacked in the message
+                updateLamportMatrix(message.getLamportMatrix(), message.getSenderId());
+
                 synchronized (messageBuffer) {
                     messageBuffer.add(message);
                 }
 
                 client.deliver(message.getMessage());
             } catch (IOException | ClassNotFoundException e) {
-                //
+                e.printStackTrace();
             }
         }
     }
@@ -144,7 +144,7 @@ public class StableMulticast {
         try {
             multicastSocket.send(packet);
         } catch (IOException e) {
-            //
+            e.printStackTrace();
         }
     }
 
@@ -161,7 +161,7 @@ public class StableMulticast {
             unicastSocket.send(packet);
             os.close();
         } catch (IOException e) {
-            //
+            e.printStackTrace();
         }
     }
 
@@ -173,6 +173,9 @@ public class StableMulticast {
     }
 
     public void msend(String msg) {
+        // Increment the Lamport clock for this client
+        lamport[clientId][clientId]++;
+
         Message message = new Message(msg, lamport, this.clientId);
         synchronized (messageBuffer) {
             messageBuffer.add(message);
@@ -191,7 +194,7 @@ public class StableMulticast {
             this.multicastSocket.close();
             this.unicastSocket.close();
         } catch (IOException e) {
-            //
+            e.printStackTrace();
         }
     }
 
@@ -204,4 +207,25 @@ public class StableMulticast {
             return new ArrayList<>(messageBuffer);
         }
     }
+
+    private void updateLamportMatrix(int[][] receivedMatrix, int senderId) {
+        synchronized (lamport) {
+            for (int i = 0; i < N_CLIENTS; i++) {
+                for (int j = 0; j < N_CLIENTS; j++) {
+                    lamport[i][j] = Math.max(lamport[i][j], receivedMatrix[i][j]);
+                }
+            }
+            lamport[clientId][senderId]++;
+        }
+    }
+
+    public int[][] getCurrentLamportMatrix() {
+        synchronized (lamport) {
+            int[][] copy = new int[N_CLIENTS][N_CLIENTS];
+            for (int i = 0; i < N_CLIENTS; i++) {
+                System.arraycopy(lamport[i], 0, copy[i], 0, N_CLIENTS);
+            }
+            return copy;
+    }
+}
 }

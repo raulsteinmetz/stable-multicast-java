@@ -1,5 +1,6 @@
 import StableMulticast.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -27,7 +28,8 @@ public class Client implements IStableMulticast {
             System.out.println("1. Send message");
             System.out.println("2. Read previous messages");
             System.out.println("3. Read Stable Multicast Buffer");
-            System.out.println("4. Leave");
+            System.out.println("4. Print Current Lamport Matrix");
+            System.out.println("5. Leave");
 
             System.out.print("Choose an option: ");
             String option = scanner.nextLine();
@@ -50,18 +52,31 @@ public class Client implements IStableMulticast {
                     System.out.println("\nStable Multicast Buffer:");
                     List<Message> buffer = stableMulticast.getMessageBuffer();
                     for (Message message : buffer) {
-                        System.out.println("ID: " + message.getSenderId() + " - Message: " + message.getMessage());
+                        System.out.println(message);
                     }
                     System.out.print("Press enter to go back to menu: ");
                     scanner.nextLine();
                     break;
                 case "4":
+                    System.out.println("\nCurrent Lamport Matrix:");
+                    printCurrentLamportMatrix();
+                    System.out.print("Press enter to go back to menu: ");
+                    scanner.nextLine();
+                    break;
+                case "5":
                     stableMulticast.leaveGroup();
                     scanner.close();
                     return;
                 default:
                     System.out.println("Invalid option. Please try again.");
             }
+        }
+    }
+
+    private void printCurrentLamportMatrix() {
+        int[][] lamportMatrix = stableMulticast.getCurrentLamportMatrix();
+        for (int[] row : lamportMatrix) {
+            System.out.println(Arrays.toString(row));
         }
     }
 

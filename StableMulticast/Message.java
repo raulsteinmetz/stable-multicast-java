@@ -1,4 +1,3 @@
-
 package StableMulticast;
 
 import java.io.Serializable;
@@ -46,12 +45,22 @@ public class Message implements Serializable {
         this.senderId = senderId;
     }
 
+    private String formatMatrix() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[\n");
+        for (int[] row : lamportMatrix) {
+            sb.append("  ").append(Arrays.toString(row)).append("\n");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
     @Override
     public String toString() {
         return "Message{" +
                 "message='" + message + '\'' +
-                ", lamportMatrix=" + Arrays.deepToString(lamportMatrix) +
-                ", senderId='" + senderId + '\'' +
+                ", senderId=" + senderId +
+                ", lamportMatrix=" + formatMatrix() +
                 '}';
     }
 }
