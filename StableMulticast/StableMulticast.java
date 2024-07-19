@@ -178,7 +178,7 @@ public class StableMulticast {
     }
 
     public void msend(String msg) {
-        System.out.println("...Sending message..."); // debugging
+        System.out.println("...sending messages..."); // debugging
         Scanner sc = new Scanner(System.in); // debugging
         // construct the vector timestamp for the message
         int[] vectorTimestamp = new int[N_CLIENTS];
@@ -197,7 +197,7 @@ public class StableMulticast {
 
         // send the message to all known members via unicast
         for (InetSocketAddress member : members) {
-            System.out.print("Press Enter to send each message!"); // debugging
+            System.out.print("press Enter to send each message!"); // debugging
             sc.nextLine(); // debugging
             sendUnicast(message, member);
         }
