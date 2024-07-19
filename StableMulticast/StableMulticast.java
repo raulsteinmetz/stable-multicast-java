@@ -17,7 +17,7 @@ public class StableMulticast {
     private MulticastSocket multicastSocket;
     private DatagramSocket unicastSocket;
     private InetAddress group;
-    private Set<InetSocketAddress> members;
+    private List<InetSocketAddress> members;
     private int[][] lamport;
     private int clientId;
     private Set<InetSocketAddress> infoMessagesReceived;
@@ -30,7 +30,7 @@ public class StableMulticast {
         this.multicastIp = "230.0.0.0";
         this.client = client;
         this.clientId = 0;
-        this.members = new HashSet<>();
+        this.members = new ArrayList<>();
         this.infoMessagesReceived = new HashSet<>();
         this.messageBuffer = new ArrayList<>();
 
@@ -201,7 +201,6 @@ public class StableMulticast {
             sc.nextLine(); // debugging
             sendUnicast(message, member);
         }
-
     }
 
     public void leaveGroup() {
